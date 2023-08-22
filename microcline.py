@@ -67,27 +67,27 @@ class Window:
     self.debug_mode = False
     if debug or os.environ.get("MICROCLINE_DEBUG"):
       self.debug_mode = True
-      
+
     self.init_h = height
     self.init_w = width
     self.title = title
-  
+
   # __enter__ and __exit__ facilitate the `with` statement for context management.
   # A window can only be used within a context manager
   # in order to ensure that cleanup happens properly.
   def __enter__(self):
     try:  # this ensures __exit__ cleans up even if __enter__ panics
       self.screen = curses.initscr()  # initialize curses
-  
+
       override_terminal_defaults()
-      
+
       # Enables colors, but also messes up all the color values.
-      curses.start_color() 
-      
+      curses.start_color()
+
       # This allows us to use -1 in color pairs to refer to the default color.
       # It also fixes some (but not all) colors messed up by the previous step.
       curses.use_default_colors()
-  
+
       # Fix the messed-up color values.
       curses.init_color(curses.COLOR_RED, 1000, 0, 0)
       curses.init_color(curses.COLOR_GREEN, 0, 1000, 0)
@@ -95,7 +95,7 @@ class Window:
       curses.init_color(curses.COLOR_CYAN, 0, 1000, 1000)
       curses.init_color(curses.COLOR_YELLOW, 1000, 1000, 0)
       curses.init_color(curses.COLOR_MAGENTA, 1000, 0, 1000)
-  
+
       # It's not enough to initialize colors,
       # to actually use them you have to associate integer
       # values with a combination of foreground and background color.
@@ -112,7 +112,7 @@ class Window:
       self.magenta = curses.color_pair(5)
       curses.init_pair(6, curses.COLOR_YELLOW, -1)
       self.yellow = curses.color_pair(6)
-  
+
       # The cursor should only be visible while we're in the input loop.
       # This causes some light cursor flickering,
       # but sadly there's no other way to prevent the cursor from jumping
@@ -143,7 +143,7 @@ class Window:
       # This defines the the parent window and its boundaries.
       # Height is a lie because of curses, see prior comment.
       self.box = self.screen.derwin(self.h+1, self.w, 0, 0)
-  
+
       # Subwindows that we can independently clear and write to,
       # defined as relative children of the parent window.
       self.msgbox = Msgbox(self, self.h-4, self.w-2, 1, 0)
@@ -152,9 +152,9 @@ class Window:
       self.draw_border()
     except Exception as e:
       self.__exit__(e)
-    
+
     return self
-  
+
   def __exit__(self, *args):
     # It's crucial that this gets called in all circumstances,
     # because if not it will completely mess up the user's terminal
@@ -189,7 +189,7 @@ class Window:
       self.box.addstr(0, int(self.w/2 - len(self.title)/2) - 2, "┫ ")
       self.box.addstr(self.title, curses.A_BOLD)
       self.box.addstr(" ┣")
-      
+
     self.box.refresh()
 
   def set_title(self, title):
@@ -255,7 +255,7 @@ class Msgbox:
         style = chunk[1]
       else:
         raise Exception("Can't append chunk of type f{type(chunk).__name__}")
-      
+
       # Append the current phrase to the current line.
       # If this phrase takes us past the end of the line,
       # break it intelligently across as many lines as needed.
@@ -285,7 +285,7 @@ class Msgbox:
 
         self.history.appendleft([("  ", curses.A_NORMAL)]) # start a new line
         line_position = 2
-    
+
   # This is what updates the terminal with the output buffer.
   def draw(self):
     # The cursor should only be drawn during the input loop,
@@ -300,21 +300,21 @@ class Msgbox:
     # and if we're not paging.
     stale = False
     line_style = curses.A_NORMAL
-    
+
     # Lines need to shift up in the presence of the paging indicator.
     compensate_paging = 0
     if self.history_index != 0:
       # Write the paging indicator.
       self.box.addstr(self.h - 1, self.w // 2, "…")
       compensate_paging = 1
-      
+
     # Don't print more than the size of the box,
     # or more than the number of lines of history we have.
     lines_to_print = min(
       self.h - compensate_paging,  # if paging, one less line of screen height
       len(self.history) - self.history_index
     )
-    
+
     for i in range(0, lines_to_print):
       # Outside the inner loop to prevent most recent command from being stale.
       if stale:
@@ -332,12 +332,12 @@ class Msgbox:
         self.box.addstr(phrase, chunk_style | line_style)  # union of styles
 
     self.box.refresh()
-  
+
   def page_up(self):
     if len(self.history)-self.history_index > self.page_size:
       self.history_index += self.page_size
       self.draw()
-  
+
   def page_down(self):
     if self.history_index >= self.page_size:
       self.history_index -= self.page_size
@@ -413,7 +413,7 @@ class Cmdbox:
             msg = f"unhandled key: {key}{name}"
             self.parent.msgbox.append(msg, sigil="✖")
             self.parent.msgbox.draw()
-    
+
     curses.curs_set(0)  # make sure cursor is disabled again
     command = "".join(self.chars).lstrip()
 
@@ -468,7 +468,7 @@ def reset_terminal_defaults():
   curses.nl()
   curses.echo()
   curses.endwin()  # closes the curses screen (can be undone by screen.refresh)
-  
+
 # Interactive debugger, usable when in debug mode.
 def debug_interactive():
   import code
